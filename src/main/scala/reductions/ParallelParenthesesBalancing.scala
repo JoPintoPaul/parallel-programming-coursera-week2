@@ -15,7 +15,7 @@ object ParallelParenthesesBalancingRunner {
     Key.exec.maxWarmupRuns -> 80,
     Key.exec.benchRuns -> 120,
     Key.verbose -> true
-  ) withWarmer(new Warmer.Default)
+  ) withWarmer (new Warmer.Default)
 
   def main(args: Array[String]): Unit = {
     val length = 100000000
@@ -39,7 +39,7 @@ object ParallelParenthesesBalancingRunner {
 object ParallelParenthesesBalancing {
 
   /** Returns `true` iff the parentheses in the input `chars` are balanced.
-   */
+    */
   def balance(chars: Array[Char]): Boolean = {
     @tailrec
     def balanceWithTwoCounts(chars: List[Char], open: Int, closed: Int): Boolean = {
@@ -59,18 +59,39 @@ object ParallelParenthesesBalancing {
   }
 
   /** Returns `true` iff the parentheses in the input `chars` are balanced.
-   */
+    */
   def parBalance(chars: Array[Char], threshold: Int): Boolean = {
 
-    def traverse(idx: Int, until: Int, arg1: Int, arg2: Int) /*: ???*/ = {
-      ???
+    @tailrec
+    def traverse(idx: Int, until: Int, arg1: Int, arg2: Int): (Int, Int) = {
+      if (idx >= until) (arg1, arg2)
+      else {
+        val (o, c) = chars(idx) match {
+          case '(' => (arg1 + 1, arg2)
+          case ')' => (arg1, arg2 + 1)
+          case _ => (arg1, arg2)
+        }
+        traverse(idx + 1, until, o, c)
+      }
     }
 
-    def reduce(from: Int, until: Int) /*: ???*/ = {
-      ???
+
+    def reduce(from: Int, until: Int): (Int, Int) = {
+//      val size = until - from
+      until - from match {
+        case size if size > threshold =>
+          val splitIndex = size / 2
+          val ((openOne, closeOne), (openTwo, closeTwo)) = parallel(
+            reduce(from, from + splitIndex),
+            reduce(from + splitIndex, until)
+          )
+          if (openOne > closeTwo) (openOne - closeTwo + openTwo, closeOne)
+          else (openTwo, closeTwo - openOne + closeOne)
+        case _ => traverse(from, until, 0, 0)
+      }
     }
 
-    reduce(0, chars.length) == ???
+    reduce(0, chars.length) == (0, 0)
   }
 
   // For those who want more:
